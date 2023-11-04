@@ -9,13 +9,12 @@ export default function UserList() {
             {/* Table component */}
              < UserListTable />
 
-            {/* New user button  */}
-            <button className="btn-add btn">Add new user</button>
+           
             {/* Pagination component  */}
             <div className="pagination position">
                 <div className="limits">
                     <span>Items per page:</span>
-                    <select name="limit" className="limit" value={5}>
+                    <select name="limit" className="limit" >
                         <option value={5}>5</option>
                         <option value={5}>10</option>
                         <option value={5}>15</option>
