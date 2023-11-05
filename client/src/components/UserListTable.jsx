@@ -3,14 +3,24 @@ import * as userService from "../services/userService";
 
 import UserListItem from "./UserListItem";
 import CreateUserModal from "./createUserModal";
+import UserInfoModal from "./UserInfoModal";
+import UserDeleteModal from "./UserDeleteModal";
+import Spinner from "./Spinner";
 
 export default function UserListTable() {
     const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+    const [showDelete, setShowDelete] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null);
 
     useEffect(() => {
+        setIsLoading(true);
         userService.getAll()
-            .then(result => setUsers(result));
+            .then(result => setUsers(result))
+            .catch(err => console.log(err))
+            .finally(() => setIsLoading(false));
 
     }, []);
 
@@ -22,16 +32,53 @@ export default function UserListTable() {
         setShowCreate(false);
     };
 
+    const userCreateHandler = async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        const data = Object.fromEntries(formData);
+        //Add user to server
+        const newUser = await userService.create(data);
+
+        //Add user to state
+        setUsers(state => [...state, newUser]);
+
+        setShowCreate(false);
+    };
+
+    const userInfoClickHandler = async (userId) => {
+        setSelectedUser(userId);
+        setShowInfo(true);
+    };
+    //-------------DELETE-------------------
+    const deleteUserClickHandler = async (userId) => {
+        setSelectedUser(userId);
+        setShowDelete(true);
+    };
+
+    const deleteUserHandler = async () => {
+        //Remove user from server
+        const result = await userService.remove(selectedUser);
+
+        //Remove user from State
+        setUsers(state => state.filter(user => user._id !== selectedUser));
+
+        //Close the Delete Modal
+        setShowDelete(false);
+    };
+
+
     return (
         <div className="table-wrapper">
 
-            {/* Overlap components  */}
-            {/* <div class="loading-shade"> */}
-            {/* Loading spinner  */}
-            {/* <div class="spinner"></div> */}
-            {/* 
+            <>
+                {/* Overlap components  */}
+                {/* <div class="loading-shade"> */}
+                {/* Loading spinner  */}
+
+                {/* 
 No users added yet  */}
-            {/* <div class="table-overlap">
+                {/* <div class="table-overlap">
 <svg
   aria-hidden="true"
   focusable="false"
@@ -49,8 +96,8 @@ No users added yet  */}
 </svg>
 <h2>There is no users yet.</h2>
 </div> */}
-            {/* No content overlap component  */}
-            {/* <div class="table-overlap">
+                {/* No content overlap component  */}
+                {/* <div class="table-overlap">
 <svg
   aria-hidden="true"
   focusable="false"
@@ -68,8 +115,8 @@ No users added yet  */}
 </svg>
 <h2>Sorry, we couldn't find what you're looking for.</h2>
 </div> */}
-            {/* On error overlap component  */}
-            {/* <div class="table-overlap">
+                {/* On error overlap component  */}
+                {/* <div class="table-overlap">
 <svg
   aria-hidden="true"
   focusable="false"
@@ -87,9 +134,9 @@ No users added yet  */}
 </svg>
 <h2>Failed to fetch</h2>
 </div> */}
-            {/* </div> */}
+                {/* </div> */}
 
-
+            </>
 
             <table className="table">
                 <thead>
@@ -194,6 +241,7 @@ No users added yet  */}
                     {users.map(user => (
                         < UserListItem
                             key={user._id}
+                            userId={user._id}
                             firstName={user.firstName}
                             lastName={user.lastName}
                             email={user.email}
@@ -201,7 +249,8 @@ No users added yet  */}
                             createdAt={user.createdAt}
                             updatedAt={user.updatedAt}
                             imageUrl={user.imageUrl}
-
+                            onInfoClick={userInfoClickHandler}
+                            onDeleteClick={deleteUserClickHandler}
                         />
 
                     ))}
@@ -211,10 +260,28 @@ No users added yet  */}
 
             {/* New user button  */}
             <button className="btn-add btn" onClick={createUserClickHandler}>Add new user</button>
+
             {showCreate &&
-                < CreateUserModal
-                    hideModal={hideCreateUserModal}
-                />}
+                (< CreateUserModal
+                    onClose={hideCreateUserModal}
+                    onCreate={userCreateHandler}
+                />)}
+
+            {showInfo && (
+                <UserInfoModal
+                    onClose={() => setShowInfo(false)}
+                    userId={selectedUser}
+                />
+            )}
+
+            {showDelete && (
+                <UserDeleteModal
+                    onClose={() => setShowDelete(false)}
+                    onDelete={deleteUserHandler}
+                />
+            )}
+
+            {isLoading && <Spinner />}
 
         </div>
     );
